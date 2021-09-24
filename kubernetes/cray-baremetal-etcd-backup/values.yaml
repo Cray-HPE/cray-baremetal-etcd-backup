@@ -1,14 +1,42 @@
-#
-# Copyright 2020 Hewlett Packard Enterprise Development LP
-#
-# Default values for cray-baremetal-etcd-backup
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
+# Copyright 2021 Hewlett Packard Enterprise Development LP
 
-nameOverride: ""
-fullnameOverride: ""
-imagesHost: "dtr.dev.cray.com"
+nameOverride: kube-etcdbackup
+fullnameOverride: kube-etcdbackup
 
-crayBaremetalEtcdBackup:
-  crayEtcdBackupSchedule: '*/10 * * * *'
-  kubeEtcdBackupImage: "roffe/kube-etcdbackup:v0.1.0"
+image:
+  repository: artifactory.algol60.net/csm-docker/stable/docker.io/roffe/kube-etcdbackup
+  tag: latest
+  pullPolicy: Always
+
+imagePullSecrets: []
+
+schedule: '*/10 * * * *'
+
+successfulJobsHistoryLimit: 1
+failedJobsHistoryLimit: 1
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 65534
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
