@@ -38,7 +38,7 @@ extract-images:
 	} | docker run --rm -i $(YQ_IMAGE) e -N '.. | .image? | select(.)' - | sort -u
 
 snyk:
-	$(MAKE) -s extract-images | xargs -n 1 snyk container test
+	$(MAKE) -s extract-images | xargs --verbose -n 1 snyk container test
 
 gen-docs:
 	docker run --rm \
