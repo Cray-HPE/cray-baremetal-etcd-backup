@@ -19,12 +19,8 @@ pipeline {
 
     stages {
         stage("Build") {
-            parallel {
-                stage('Chart') {
-                    steps {
-                        sh "make chart"
-                    }
-                }
+            steps {
+                sh "make"
             }
         }
 
