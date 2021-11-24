@@ -1,20 +1,52 @@
 NAME ?= cray-baremetal-etcd-backup
-CHART_PATH ?= kubernetes
-CHART_VERSION ?= local
 
-HELM_UNITTEST_IMAGE ?= quintush/helm-unittest:3.3.0-0.2.5
+CHARTDIR ?= kubernetes
 
-all : chart
-chart: chart_setup chart_package chart_test
+YQ_IMAGE ?= artifactory.algol60.net/docker.io/mikefarah/yq:4
+HELM_IMAGE ?= artifactory.algol60.net/docker.io/alpine/helm:3.7.1
+HELM_UNITTEST_IMAGE ?= artifactory.algol60.net/docker.io/quintush/helm-unittest
+HELM_DOCS_IMAGE ?= artifactory.algol60.net/docker.io/jnorwood/helm-docs:v1.5.0
 
+all: package test
 
-chart_setup:
-		mkdir -p ${CHART_PATH}/.packaged
+helm:
+	docker run --rm \
+	    --user $(shell id -u):$(shell id -g) \
+	    --mount type=bind,src="$(shell pwd)",dst=/src \
+	    -w /src \
+	    -e HELM_CACHE_HOME=/src/.helm/cache \
+	    -e HELM_CONFIG_HOME=/src/.helm/config \
+	    -e HELM_DATA_HOME=/src/.helm/data \
+	    $(HELM_IMAGE) \
+	    $(CMD)
 
-chart_package:
-		helm dep up ${CHART_PATH}/${NAME}
-		helm package ${CHART_PATH}/${NAME} -d ${CHART_PATH}/.packaged --version ${CHART_VERSION}
+package: ${CHARTDIR}/.packaged
+	CMD="dep up ${CHARTDIR}/${NAME}" $(MAKE) helm
+	CMD="package ${CHARTDIR}/${NAME} -d ${CHARTDIR}/.packaged $(if ${CHART_VERSION},--version ${CHART_VERSION},)" $(MAKE) helm
 
-chart_test:
-		helm lint "${CHART_PATH}/${NAME}"
-		docker run --rm -v ${PWD}/${CHART_PATH}:/apps ${HELM_UNITTEST_IMAGE} -3 ${NAME}
+${CHARTDIR}/.packaged:
+	mkdir -p ${CHARTDIR}/.packaged
+
+test:
+	CMD="lint ${CHARTDIR}/${NAME}" $(MAKE) helm
+	docker run --rm -v ${PWD}/${CHARTDIR}:/apps ${HELM_UNITTEST_IMAGE} -3 ${NAME}
+
+extract-images:
+	{ CMD="template release ${CHARTDIR}/${NAME} --dry-run --replace --dependency-update" $(MAKE) -s helm; \
+	  echo '---' ; \
+	  CMD="show chart ${CHARTDIR}/${NAME}" $(MAKE) -s helm | docker run --rm -i $(YQ_IMAGE) e -N '.annotations."artifacthub.io/images"' - ; \
+	} | docker run --rm -i $(YQ_IMAGE) e -N '.. | .image? | select(.)' - | sort -u
+
+snyk:
+	$(MAKE) -s extract-images | xargs --verbose -n 1 snyk container test
+
+gen-docs:
+	docker run --rm \
+	    --user $(shell id -u):$(shell id -g) \
+	    --mount type=bind,src="$(shell pwd)",dst=/src \
+	    -w /src \
+	    $(HELM_DOCS_IMAGE) \
+	    helm-docs --chart-search-root=$(CHARTDIR)
+
+clean:
+	$(RM) -r ${CHARTDIR}/.packaged .helm

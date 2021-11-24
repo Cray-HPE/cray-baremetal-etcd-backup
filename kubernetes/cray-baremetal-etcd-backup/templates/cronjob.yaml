@@ -1,0 +1,63 @@
+# Copyright 2021 Hewlett Packard Enterprise Development LP
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "cray-baremetal-etcd-backup.fullname" . }}
+  labels:
+    {{- include "cray-baremetal-etcd-backup.labels" . | nindent 4 }}
+spec:
+  successfulJobsHistoryLimit: {{ .Values.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.failedJobsHistoryLimit }}
+  schedule: "{{ .Values.schedule }}"
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        metadata:
+          labels:
+            {{- include "cray-baremetal-etcd-backup.selectorLabels" . | nindent 12 }}
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: {{ include "cray-baremetal-etcd-backup.name" . }}
+            securityContext:
+              {{- toYaml .Values.securityContext | nindent 14 }}
+            image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+            imagePullPolicy: {{ .Values.image.pullPolicy }}
+            resources:
+              {{- toYaml .Values.resources | nindent 14 }}
+            envFrom:
+            - configMapRef:
+                name: kube-etcdbackup
+            env:
+              - name: S3_ACCESS_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: kube-etcdbackup-s3
+                    key: S3_ACCESS_KEY
+              - name: S3_SECRET_KEY
+                valueFrom:
+                  secretKeyRef:
+                    name: kube-etcdbackup-s3
+                    key: S3_SECRET_KEY
+            volumeMounts:
+            - name: etcd-client-certs
+              mountPath: "/ssl"
+              readOnly: true
+          volumes:
+          - name: etcd-client-certs
+            secret:
+              secretName: kube-etcdbackup-etcd
+          {{- with .Values.nodeSelector }}
+          nodeSelector:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.affinity }}
+          affinity:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.tolerations }}
+          tolerations:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
