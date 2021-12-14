@@ -1,6 +1,6 @@
 # Copyright 2021 Hewlett Packard Enterprise Development LP
 ---
-apiVersion: batch/v1
+apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
   name: {{ include "cray-baremetal-etcd-backup.fullname" . }}
