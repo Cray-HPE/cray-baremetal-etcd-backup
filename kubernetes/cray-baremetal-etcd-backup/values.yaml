@@ -5,8 +5,8 @@ fullnameOverride: kube-etcdbackup
 
 image:
   repository: artifactory.algol60.net/csm-docker/stable/docker.io/roffe/kube-etcdbackup
-  tag: latest
-  pullPolicy: Always
+  tag: v0.1.0
+  pullPolicy: IfNotPresent
 
 imagePullSecrets: []
 
@@ -14,7 +14,17 @@ schedule: '*/10 * * * *'
 
 successfulJobsHistoryLimit: 1
 failedJobsHistoryLimit: 1
-
+#
+# Settings below are meant to prevent multiple
+# pods in error state from overwhelming the system.
+#
+# To allow the job pod to be scheduled, we must set activeDeadlineSeconds in
+# two places, and set the Pod's .spec.activeDeadlineSeconds
+# to a higher value than the Job's .spec.activeDeadlineSeconds
+# in order to prevent the pod from being killed prematurely.
+#
+jobActiveDeadlineSeconds: 300
+podActiveDeadlineSeconds: 330
 securityContext: {}
   # capabilities:
   #   drop:

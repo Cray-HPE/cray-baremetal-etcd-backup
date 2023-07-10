@@ -1,13 +1,13 @@
 apiVersion: v2
 name: cray-baremetal-etcd-backup
-version: 0.2.1
+version: 0.2.2
 description: Backs up the Kubernetes etcd cluster
 home: https://github.com/Cray-HPE/cray-baremetal-etcd-backup
 maintainers:
-  - name: brantk-hpe
-appVersion: latest
+  - name: bklein
+appVersion: v0.1.0
 annotations:
   artifacthub.io/images: |
     - name: kube-etcdbackup
-      image: artifactory.algol60.net/csm-docker/stable/docker.io/roffe/kube-etcdbackup:latest
+      image: artifactory.algol60.net/csm-docker/stable/docker.io/roffe/kube-etcdbackup:v0.1.0
   artifacthub.io/license: MIT
