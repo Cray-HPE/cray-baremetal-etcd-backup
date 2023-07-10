@@ -2,10 +2,11 @@ NAME ?= cray-baremetal-etcd-backup
 
 CHARTDIR ?= kubernetes
 
+CHART_METADATA_IMAGE ?= artifactory.algol60.net/csm-docker/stable/chart-metadata
 YQ_IMAGE ?= artifactory.algol60.net/docker.io/mikefarah/yq:4
-HELM_IMAGE ?= artifactory.algol60.net/docker.io/alpine/helm:3.7.1
-HELM_UNITTEST_IMAGE ?= artifactory.algol60.net/docker.io/quintush/helm-unittest
-HELM_DOCS_IMAGE ?= artifactory.algol60.net/docker.io/jnorwood/helm-docs:v1.5.0
+HELM_IMAGE ?= artifactory.algol60.net/csm-docker/stable/docker.io/alpine/helm:3.9.4
+HELM_UNITTEST_IMAGE ?= artifactory.algol60.net/csm-docker/stable/docker.io/quintush/helm-unittest:latest
+HELM_DOCS_IMAGE ?= artifactory.algol60.net/csm-docker/stable/docker.io/jnorwood/helm-docs:v1.5.0
 
 all: package test
 
@@ -29,7 +30,11 @@ ${CHARTDIR}/.packaged:
 
 test:
 	CMD="lint ${CHARTDIR}/${NAME}" $(MAKE) helm
-	docker run --rm -v ${PWD}/${CHARTDIR}:/apps ${HELM_UNITTEST_IMAGE} -3 ${NAME}
+	docker run --rm \
+		--user $(shell id -u):$(shell id -g) \
+		-v ${PWD}/${CHARTDIR}:/apps \
+		${HELM_UNITTEST_IMAGE} \
+		${NAME}
 
 extract-images:
 	{ CMD="template release ${CHARTDIR}/${NAME} --dry-run --replace --dependency-update" $(MAKE) -s helm; \
